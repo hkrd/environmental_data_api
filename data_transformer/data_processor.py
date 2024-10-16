@@ -17,6 +17,7 @@ class FileProcessor:
         self.file_info = []
         self.cumulative_points = 0
         self.year_stats: Dict[int, Dict] = {}
+        self.modified_entries = {}  # Dictionary to store modified entries
 
     def initialize_data(self):
         pbar = tqdm(NC_FILES, desc="Initializing data", unit="file")
@@ -166,6 +167,28 @@ class FileProcessor:
                 max_pm2_5=max(stats['max'] for stats in self.year_stats.values()),
                 years_available=sorted(self.year_stats.keys())
             )
+
+    def get_entry_by_id(self, entry_id: int) -> Optional[DataEntry]:
+        if entry_id in self.modified_entries:
+            return self.modified_entries[entry_id]
+
+        results = self.get_data_generator(entry_id, entry_id + 1)
+        for file_name, file_data in results:
+            if file_data:
+                return file_data[0]
+        return None
+
+    def update_entry(self, entry_id: int, updated_entry: DataEntry):
+        self.modified_entries[entry_id] = updated_entry
+
+    def delete_entry(self, entry_id: int):
+        self.modified_entries[entry_id] = None
+
+    def create_entry(self, new_entry: DataEntry) -> int:
+        new_id = self.cumulative_points
+        self.modified_entries[new_id] = new_entry
+        self.cumulative_points += 1
+        return new_id
 
 file_processor = FileProcessor()
 file_processor.initialize_data()

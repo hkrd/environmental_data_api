@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from typing import Optional
-from data_transformer.models import DataResponse, FilterDataResponse, StatsResponse
+from data_transformer.models import DataResponse, FilterDataResponse, StatsResponse, DataEntry
 from data_transformer.data_processor import file_processor
 
 
@@ -60,3 +60,35 @@ def filter_data(
         page_size=page_size,
         total_items=total_items
     )
+
+
+@router.get("/data/{entry_id}")
+def get_entry(entry_id: int):
+    entry = file_processor.get_entry_by_id(entry_id)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return entry
+
+
+@router.post("/data")
+def create_entry(entry: DataEntry):
+    new_id = file_processor.create_entry(entry)
+    return {"id": new_id, "entry": entry}
+
+
+@router.put("/data/{entry_id}")
+def update_entry(entry_id: int, updated_entry: DataEntry):
+    existing_entry = file_processor.get_entry_by_id(entry_id)
+    if existing_entry is None:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    file_processor.update_entry(entry_id, updated_entry)
+    return {"message": "Entry updated successfully"}
+
+
+@router.delete("/data/{entry_id}")
+def delete_entry(entry_id: int):
+    existing_entry = file_processor.get_entry_by_id(entry_id)
+    if existing_entry is None:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    file_processor.delete_entry(entry_id)
+    return {"message": "Entry deleted successfully"}
