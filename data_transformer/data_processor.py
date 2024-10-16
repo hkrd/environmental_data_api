@@ -9,18 +9,17 @@ from data_transformer.models import DataEntry, StatsResponse
 
 
 BASE_PATH = os.path.join(os.path.dirname(__file__), "..", "data")
-NC_FILES = [os.path.join(BASE_PATH, f) for f in os.listdir(BASE_PATH) if f.endswith(".nc")]
-
 
 class FileProcessor:
-    def __init__(self):
+    def __init__(self, nc_files: List[str]):
+        self.nc_files = nc_files
         self.file_info = []
         self.cumulative_points = 0
         self.year_stats: Dict[int, Dict] = {}
         self.modified_entries = {}  # Dictionary to store modified entries
 
     def initialize_data(self):
-        pbar = tqdm(NC_FILES, desc="Initializing data", unit="file")
+        pbar = tqdm(self.nc_files, desc="Initializing data", unit="file")
         
         for file in pbar:
             data_gen, file_total_points = parse_nc_file(file, 100000)
@@ -189,6 +188,4 @@ class FileProcessor:
         self.modified_entries[new_id] = new_entry
         self.cumulative_points += 1
         return new_id
-
-file_processor = FileProcessor()
-file_processor.initialize_data()
+    

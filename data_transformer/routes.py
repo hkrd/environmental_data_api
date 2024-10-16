@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Query, HTTPException
 from typing import Optional
-from data_transformer.models import DataResponse, FilterDataResponse, StatsResponse, DataEntry
-from data_transformer.data_processor import file_processor
+from data_transformer.data_downloader import ensure_data_files
+from data_transformer.models import DataResponse, FilterDataResponse, DataEntry
+from data_transformer.data_processor import FileProcessor
 
 
 router = APIRouter()
-
+nc_files = ensure_data_files()
+file_processor = FileProcessor(nc_files)
+file_processor.initialize_data()
 
 @router.get("/data")
 def get_all_data(page: int = Query(1, ge=1), page_size: int = Query(100, le=1000)):
@@ -62,9 +65,9 @@ def filter_data(
     )
 
 
-@router.get("/data/{entry_id}")
-def get_entry(entry_id: int):
-    entry = file_processor.get_entry_by_id(entry_id)
+@router.get("/data/{id}")
+def get_entry(id: int):
+    entry = file_processor.get_entry_by_id(id)
     if entry is None:
         raise HTTPException(status_code=404, detail="Entry not found")
     return entry
@@ -76,19 +79,19 @@ def create_entry(entry: DataEntry):
     return {"id": new_id, "entry": entry}
 
 
-@router.put("/data/{entry_id}")
-def update_entry(entry_id: int, updated_entry: DataEntry):
-    existing_entry = file_processor.get_entry_by_id(entry_id)
+@router.put("/data/{id}")
+def update_entry(id: int, updated_entry: DataEntry):
+    existing_entry = file_processor.get_entry_by_id(id)
     if existing_entry is None:
         raise HTTPException(status_code=404, detail="Entry not found")
-    file_processor.update_entry(entry_id, updated_entry)
+    file_processor.update_entry(id, updated_entry)
     return {"message": "Entry updated successfully"}
 
 
-@router.delete("/data/{entry_id}")
-def delete_entry(entry_id: int):
-    existing_entry = file_processor.get_entry_by_id(entry_id)
+@router.delete("/data/{id}")
+def delete_entry(id: int):
+    existing_entry = file_processor.get_entry_by_id(id)
     if existing_entry is None:
         raise HTTPException(status_code=404, detail="Entry not found")
-    file_processor.delete_entry(entry_id)
+    file_processor.delete_entry(id)
     return {"message": "Entry deleted successfully"}

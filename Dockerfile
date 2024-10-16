@@ -1,13 +1,20 @@
-FROM python:3.11
+FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY pyproject.toml .
-COPY poetry.lock .
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN poetry install --no-cache --no-interaction --no-root
+RUN pip install --no-cache-dir poetry
 
-COPY /data /app/data
-COPY /data_transformer /app/data_transformer
+COPY pyproject.toml poetry.lock* /app/
 
-CMD ["uvicorn", "data_transformer.main:app", "--host", "0.0.0.0", "--port", "8000"]
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi
+
+COPY data_transformer /app/data_transformer
+
+EXPOSE 8000
+
+CMD ["poetry", "run", "uvicorn", "data_transformer.main:app", "--host", "0.0.0.0", "--port", "8000"]
